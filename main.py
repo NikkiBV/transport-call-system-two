@@ -1,6 +1,3 @@
-# ============================================================================
-# 📦 УСТАНОВКА ЗАВИСИМОСТЕЙ (ОБЯЗАТЕЛЬНО ДЛЯ GOOGLE COLAB)
-# ============================================================================
 !pip install catboost -q
 
 from pathlib import Path
@@ -128,9 +125,6 @@ if len(fit_df) > MAX_TRAIN_ROWS:
     fit_df = fit_df.sample(MAX_TRAIN_ROWS, random_state=RANDOM_STATE)
 print(f"📊 Fit: {fit_df.shape[0]}, Valid: {valid_df.shape[0]}")
 
-# ============================================================================
-# 🔄 ПОДГОТОВКА ДАННЫХ ДЛЯ CATBOOST
-# ============================================================================
 X_fit = fit_df[feature_cols].copy()
 y_fit = fit_df[FUTURE_TARGET_COLS].copy()
 X_valid = valid_df[feature_cols].copy()
@@ -141,9 +135,6 @@ X_test = test_model_df[feature_cols].copy()
 cat_features_idx = [i for i, col in enumerate(feature_cols) if col in categorical_features]
 print(f"📊 CatBoost: {len(cat_features_idx)} категориальных признаков (индексы: {cat_features_idx})")
 
-# ============================================================================
-# 🛠️ СБОРКА И ОБУЧЕНИЕ МОДЕЛЕЙ (ЦИКЛ ВМЕСТО MULTIOUTPUTREGRESSOR)
-# ============================================================================
 print("🎓 Обучение CatBoost моделей (по одной на каждый шаг прогноза)...")
 cb_models = []
 valid_preds_list = []
@@ -181,9 +172,6 @@ valid_pred_df = pd.DataFrame(np.column_stack(valid_preds_list), columns=FUTURE_T
 test_pred_df = pd.DataFrame(np.column_stack(test_preds_list), columns=FUTURE_TARGET_COLS, index=test_model_df.index)
 print("✅ Все модели CatBoost обучены")
 
-# ============================================================================
-# 🔮 ГЕНЕРАЦИЯ ПРОГНОЗОВ И ОЦЕНКА
-# ============================================================================
 print("🔮 Генерация прогнозов завершена")
 
 class WapePlusRbias:
@@ -199,9 +187,6 @@ metric = WapePlusRbias()
 valid_score = metric.calculate(y_valid.to_numpy().flatten(), valid_pred_df.to_numpy().flatten())
 print(f"📈 Метрика на валидации (WAPE+Rbias): {valid_score:.4f}")
 
-# ============================================================================
-# 🚚 БИЗНЕС-ЛОГИКА: РАСЧЁТ ТРАНСПОРТА
-# ============================================================================
 def calculate_vehicles_needed(forecast_volume_m3, config=BUSINESS_CONFIG):
     capacity = config["vehicle_capacity_m3"]
     min_util = config["min_utilization_threshold"]
@@ -278,9 +263,6 @@ for idx, row in test_pred_df.iterrows():
 recommendations_df = pd.DataFrame(recommendations_list)
 print(f"✅ Сформировано {len(recommendations_df)} рекомендаций")
 
-# ============================================================================
-# 📊 БИЗНЕС-МЕТРИКИ СИСТЕМЫ
-# ============================================================================
 print("\n📊 Расчёт бизнес-метрик системы...")
 service_level = (recommendations_df["utilization_rate"] >= BUSINESS_CONFIG["min_utilization_threshold"]).mean()
 print(f"• Уровень сервиса (загрузка ≥ {BUSINESS_CONFIG['min_utilization_threshold']*100:.0f}%): {service_level*100:.1f}%")
@@ -297,9 +279,6 @@ auto_call_rate = (recommendations_df["call_recommended"] &
                   (recommendations_df["model_confidence"] >= BUSINESS_CONFIG["forecast_confidence_threshold"])).mean()
 print(f"• Доля маршрутов для авто-вызова: {auto_call_rate*100:.1f}%")
 
-# ============================================================================
-# 📝 ФОРМИРОВАНИЕ SUBMISSION.CSV
-# ============================================================================
 print("\n📝 Формирование submission.csv (для соревнования)...")
 submission_df = test_pred_df.copy()
 submission_df['route_id'] = X_test['route_id'].values
@@ -321,9 +300,6 @@ forecast_df = forecast_df.rename(columns={"forecast": "y_pred"})
 assert forecast_df['id'].isna().sum() == 0, "❌ Есть строки без id!"
 print(f"✅ Готово: {forecast_df.shape[0]} прогнозов")
 
-# ============================================================================
-# 🚚 ФОРМИРОВАНИЕ TRANSPORT_RECOMMENDATIONS.CSV
-# ============================================================================
 print("\n🚚 Формирование transport_recommendations.csv (для логистов)...")
 priority_cats = pd.CategoricalDtype(categories=["HIGH", "MEDIUM", "LOW", "NONE"], ordered=True)
 recommendations_df["priority"] = recommendations_df["priority"].astype(priority_cats)
@@ -333,9 +309,6 @@ rec_path = "transport_recommendations.csv"
 recommendations_df.to_csv(rec_path, index=False, encoding="utf-8-sig")
 print(f"💾 Файл сохранён: {rec_path}")
 
-# ============================================================================
-# 📄 ГЕНЕРАЦИЯ README.MD
-# ============================================================================
 print("\n📄 Генерация README.md...")
 
 config_lines = [f"- **{k}**: {v}" for k, v in BUSINESS_CONFIG.items()]
@@ -395,9 +368,6 @@ with open("README.md", "w", encoding="utf-8") as f:
     f.write(readme_content)
 print("💾 README.md сохранён")
 
-# ============================================================================
-# 💾 СОХРАНЕНИЕ И СКАЧИВАНИЕ ФАЙЛОВ
-# ============================================================================
 submission_path = f"submission_{TRACK}.csv"
 forecast_df.to_csv(submission_path, index=False)
 print(f"💾 Файл сохранён: {submission_path}")
